@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+
+# 本地数据（含真实工单与截图，不对外发布）
+code/tickets.db
+code/tickets.db-wal
+code/tickets.db-shm
+code/attachments/
+
+# 编译产物（首次使用时自动生成）
+code/tools/ocr
+
+# 个人启动脚本（内部含本机绝对路径）
+文档/一键启动.command
+
+# 系统与编辑器
+.DS_Store
+**/.DS_Store
+.env
+*.log
+.idea/
+.vscode/

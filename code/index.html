@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>工单记录小工具 - 产品原型</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a63e6'/><path d='M9 12h14M9 17h10' stroke='white' stroke-width='2.4' stroke-linecap='round'/></svg>"
+    />
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("ticketDeskTheme");
+          if (theme !== "light" && theme !== "dark") {
+            theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          }
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <p class="eyebrow">Local Ticket Desk</p>
+          <h1>工单记录</h1>
+        </div>
+        <label class="search">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.2-3.2" />
+          </svg>
+          <input id="globalSearch" type="search" placeholder="搜索本地号、外部号、反馈人或问题" />
+        </label>
+        <div class="top-actions">
+          <div class="service-chip" title="本地服务状态">
+            <span class="service-dot" aria-hidden="true"></span>
+            <span id="serviceStatus" class="service-status">检查服务状态中</span>
+          </div>
+          <button class="service-toggle" id="serviceToggleButton" type="button">检查服务</button>
+          <button class="icon-button theme-toggle" id="themeToggle" type="button" aria-label="切换主题">
+            <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+            <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
+          <button class="icon-button" id="settingsButton" type="button" title="设置" aria-label="设置">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
+          <button class="primary-button" id="exportButton" type="button">导出数据</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="list-panel" aria-label="工单列表">
+          <div class="list-head">
+            <div class="list-title">
+              <h2>工单列表</h2>
+              <p class="list-stat">共 <strong id="listTotal">0</strong> 条 · 今日新增 <strong id="todayCount">0</strong></p>
+            </div>
+            <div class="list-tools">
+              <nav id="statusNav" class="filter-bar" aria-label="状态筛选"></nav>
+              <select id="sortSelect" aria-label="排序">
+                <option value="createdDesc">创建时间 ↓</option>
+                <option value="reportDesc">反馈时间 ↓</option>
+                <option value="priorityDesc">优先级 ↓</option>
+              </select>
+            </div>
+          </div>
+          <div id="ticketList" class="ticket-list"></div>
+          <div id="emptyState" class="empty-state" hidden>
+            <strong>没有匹配的工单</strong>
+            <span>调整筛选条件，或在下方输入框创建一条。</span>
+          </div>
+        </section>
+
+        <aside class="detail-drawer" id="detailDrawer" aria-label="工单详情">
+          <div id="ticketDetail" class="detail-body"></div>
+        </aside>
+      </main>
+
+      <form class="composer" id="composer">
+        <div class="progress-bar" aria-hidden="true"></div>
+        <div class="attachment-row" id="attachmentRow" aria-live="polite"></div>
+        <div class="composer-box">
+          <input id="fileInput" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" multiple />
+          <button class="icon-button" id="attachButton" type="button" title="添加截图" aria-label="添加截图">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+          <textarea id="ticketInput" rows="2" placeholder="粘贴反馈文字或聊天截图，Cmd/Ctrl + Enter 创建工单"></textarea>
+          <button class="send-button" type="submit">创建工单</button>
+        </div>
+        <div class="composer-footer">
+          <p id="parseStatus" class="parse-status" aria-live="polite"></p>
+          <button id="draftButton" class="draft-button" type="button" hidden>跳过识别，直接创建草稿</button>
+          <span class="kbd-hints">
+            <kbd>⌘K</kbd> 聚焦输入
+            <kbd>J</kbd><kbd>K</kbd> 切换工单
+          </span>
+        </div>
+      </form>
+    </div>
+
+    <dialog id="settingsDialog" class="settings-dialog">
+      <form method="dialog">
+        <div class="dialog-heading">
+          <h2>设置</h2>
+          <button class="icon-button" value="close" aria-label="关闭" title="关闭">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <section class="settings-group">
+          <h3>AI 识别</h3>
+          <label class="setting-row">
+            <span>
+              <strong>识别方式</strong>
+              <small>本地 Ollama 免费离线；联网识别默认智谱 GLM-4V-Flash，可随时切换厂商。</small>
+            </span>
+            <select id="recognitionMode">
+              <option value="ollama">本地 Ollama（免费离线）</option>
+              <option value="cloud" selected>联网识别（厂商可配置）</option>
+            </select>
+          </label>
+          <label class="setting-row">
+            <span>
+              <strong>截图文字提取</strong>
+              <small>先用 macOS 系统 OCR 提取截图文字（毫秒级、离线），再由模型做字段结构化，比模型直接看图快很多。</small>
+            </span>
+            <select id="ocrModeInput">
+              <option value="auto" selected>自动（本地识别时启用）</option>
+              <option value="on">始终启用</option>
+              <option value="off">关闭，直接让模型看图</option>
+            </select>
+          </label>
+          <label class="setting-row" id="providerRow">
+            <span>
+              <strong>服务商预设</strong>
+              <small>联网时可选智谱 GLM-4V-Flash（免费）或 DeepSeek 等其他厂商。</small>
+            </span>
+            <select id="providerInput">
+              <optgroup label="推荐">
+                <option value="zhipu" selected>智谱 GLM-4V-Flash（免费图片识别）</option>
+              </optgroup>
+              <optgroup label="其他厂商">
+                <option value="deepseek">DeepSeek V4（仅文本）</option>
+                <option value="qwen">通义千问 Qwen VL（多模态）</option>
+                <option value="kimi">Kimi 月之暗面（多模态）</option>
+                <option value="glm-ocr">智谱 GLM-OCR（截图文字解析）</option>
+                <option value="openai_compatible">OpenAI 兼容/自定义</option>
+              </optgroup>
+            </select>
+          </label>
+          <label class="setting-row">
+            <span>
+              <strong>Base URL</strong>
+              <small>Ollama 默认 http://127.0.0.1:11434/v1，联网厂商自动填充。</small>
+            </span>
+            <input id="baseUrlInput" type="text" value="https://open.bigmodel.cn/api/paas/v4" />
+          </label>
+          <label class="setting-row" id="apiKeyRow">
+            <span>
+              <strong>API Key</strong>
+              <small>本地 Ollama 无需填写；联网时填写对应厂商的 API Key。</small>
+            </span>
+            <input id="apiKeyInput" type="password" placeholder="sk-..." autocomplete="off" />
+          </label>
+          <label class="setting-row">
+            <span>
+              <strong>模型名称</strong>
+              <small>本地默认 qwen3-vl:4b（你已下载），可换 8b；联网默认 glm-4v-flash。</small>
+            </span>
+            <input id="modelInput" type="text" value="qwen3-vl:4b" list="modelOptions" />
+            <datalist id="modelOptions">
+              <option value="qwen3-vl:4b"></option>
+              <option value="qwen3-vl:8b"></option>
+              <option value="qwen2.5vl:7b"></option>
+              <option value="minicpm-v"></option>
+              <option value="glm-4v-flash"></option>
+              <option value="glm-4.6v-flash"></option>
+              <option value="glm-4.1v-thinking-flash"></option>
+              <option value="glm-4v-plus"></option>
+              <option value="qwen-vl-max"></option>
+              <option value="moonshot-v1-8k"></option>
+              <option value="deepseek-v4-flash"></option>
+              <option value="deepseek-v4-pro"></option>
+              <option value="gpt-4o-mini"></option>
+            </datalist>
+          </label>
+          <label class="setting-row" id="thinkingRow">
+            <span>
+              <strong>DeepSeek 思考模式</strong>
+              <small>仅 DeepSeek 生效，图片识别建议关闭。</small>
+            </span>
+            <select id="thinkingInput">
+              <option value="disabled">关闭</option>
+              <option value="enabled">开启</option>
+            </select>
+          </label>
+          <label class="setting-row">
+            <span>
+              <strong>请求超时</strong>
+              <small>超过该时间则降级为本地草稿。</small>
+            </span>
+            <input id="timeoutInput" type="number" value="15" min="5" max="300" step="1" />
+          </label>
+          <label class="setting-row">
+            <span>
+              <strong>数据脱敏</strong>
+              <small>手机号、邮箱、身份证号等发送前掩码。</small>
+            </span>
+            <input id="dataMaskInput" type="checkbox" role="switch" checked />
+          </label>
+        </section>
+      </form>
+    </dialog>
+
+    <dialog id="exportDialog" class="settings-dialog">
+      <form method="dialog">
+        <div class="dialog-heading">
+          <h2>导出数据</h2>
+          <button class="icon-button" value="close" aria-label="关闭" title="关闭">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <section class="settings-group">
+          <h3>本地表格</h3>
+          <div class="export-summary">
+            <strong id="exportCount">0 条工单</strong>
+            <span>导出范围为当前搜索与状态筛选结果。</span>
+          </div>
+          <div class="export-actions">
+            <button class="primary-button" id="downloadExcelButton" type="button">导出 Excel</button>
+            <button class="secondary-button" id="downloadCsvButton" type="button">导出 CSV</button>
+          </div>
+        </section>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="app.js?v=2.3"></script>
+  </body>
+</html>
